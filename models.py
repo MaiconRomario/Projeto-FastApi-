@@ -32,14 +32,14 @@ class User(Base):
 class Order(Base):
     __tablename__ = 'orders'
 
-    ORDER_STATUS = (
-        ("PENDENTE", "PENDENTE"),
-        ("CANCELADO", "CANCELADO"),
-        ("FINALIZADO", "FINALIZADO")
-        )
+    # ORDER_STATUS = (
+    #     ("PENDENTE", "PENDENTE"),
+    #     ("CANCELADO", "CANCELADO"),
+    #     ("FINALIZADO", "FINALIZADO")
+    #     )
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    status = Column('status', ChoiceType(choices=ORDER_STATUS)) #pendente, cancelado, finalizado
+    status = Column('status', String) #pendente, cancelado, finalizado
     user_id = Column('user_id', ForeignKey('users.id') ) 
     price = Column('price', Float)
     #items =

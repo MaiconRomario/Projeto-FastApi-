@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, ForeignKey
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, Mapped
 from sqlalchemy_utils.types import ChoiceType
 
 #Cria a conexão com seu banco

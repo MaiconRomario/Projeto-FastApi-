@@ -12,6 +12,14 @@ def creating_token(user_id):
     token = f"wadwa43454ewrwf{user_id}" 
     return token
 
+def user_authentication(email, senha, session):
+    user = session.query(User).filter(User.email==email).first()
+    if not user:
+        return False
+    elif not bcrypt_context.verify(senha, user.password):
+        return False
+    return user
+
 @auth_router.get('/')
 async def home():
     return {'message' : 'Voce accesou a rota padrão auth', "autenticado": False}
@@ -31,9 +39,9 @@ async def create_user(user_schema: UserSchema ,session : Session = Depends(get_s
     
 @auth_router.post("/login")
 async def login(login_schema: LoginSchema, session : Session = Depends(get_session)):
-    user = session.query(User).filter(User.email==login_schema.email).first()
+    user = user_authentication(login_schema.email, login_schema.password,session)
     if not user:
-        raise HTTPException(status_code=400, detail="User not found")
+        raise HTTPException(status_code=400, detail="User not found or credentials not found ")
     else:
         access_token = creating_token(user.id)
         return {

@@ -1,7 +1,7 @@
 # type: ignore
 from fastapi import APIRouter, Depends, HTTPException
 from models import User
-from dependencies import get_session
+from dependencies import get_session, verify_token
 from main import bcrypt_context, ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from schemas import UserSchema, LoginSchema 
 from sqlalchemy.orm import Session
@@ -10,9 +10,9 @@ from datetime import datetime, timezone, timedelta
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-def creating_token(user_id):
-    date_expiration = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    dic_info ={"sub": user_id, "exp": date_expiration}
+def creating_token(user_id, duration_token=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
+    date_expiration = datetime.now(timezone.utc) + duration_token
+    dic_info ={"sub": str(user_id), "exp": date_expiration}
     encoded_JWT = jwt.encode(dic_info, SECRET_KEY, ALGORITHM) 
     return encoded_JWT
 
@@ -48,7 +48,17 @@ async def login(login_schema: LoginSchema, session : Session = Depends(get_sessi
         raise HTTPException(status_code=400, detail="User not found or credentials not found ")
     else:
         access_token = creating_token(user.id)
+        refresh_token = creating_token(user.id, duration_token=timedelta(days=7) )
         return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type" : "Bearer"
+        }
+    
+@auth_router.get("/refresh")
+async def user_refresh_token(user: User = Depends(verify_token)):
+    access_token = creating_token(user.id)
+    return {
             "access_token": access_token,
             "token_type" : "Bearer"
         }

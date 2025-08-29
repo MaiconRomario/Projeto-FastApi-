@@ -3,6 +3,7 @@
 # Edit at https://www.gitignore.io/?templates=linux,macos,python,pycharm,windows,visualstudiocode
 
 documentation.txt
+teste.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

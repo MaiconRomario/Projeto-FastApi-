@@ -46,11 +46,11 @@ async def insert_order_item(order_id: int ,order_item_schema: OrderItemSchema, s
     order = session.query(Order).filter(Order.id==order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    elif not user.admin and user.id != order.user_id:
+    elif not user.admin and user.id != order.user_id: # type: ignore
         raise HTTPException(status_code=403, detail="You are not authorized")
     order_item = OrderItems(order_item_schema.quantity, order_item_schema.flavor, order_item_schema.size, order_item_schema.unit_price, order_id)
-    order.calculate_price()
     session.add(order_item)
+    order.calculate_price()
     session.commit()
     return {
         "message" : "Item creation successful",

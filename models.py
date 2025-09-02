@@ -25,8 +25,8 @@ class User(Base):
         self.name = name
         self.email = email
         self.password = password
-        self.active = active
-        self.admin = admin
+        self.active = bool(active)
+        self.admin = bool(admin)
 
 #pedido
 class Order(Base):

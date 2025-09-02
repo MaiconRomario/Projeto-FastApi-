@@ -7,6 +7,7 @@ from schemas import UserSchema, LoginSchema
 from sqlalchemy.orm import Session
 from jose import jwt, JWSError
 from datetime import datetime, timezone, timedelta
+from fastapi.security import OAuth2PasswordRequestForm
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -30,16 +31,32 @@ async def home():
 
 
 @auth_router.post('/create_user')
-async def create_user(user_schema: UserSchema ,session : Session = Depends(get_session)):
-    user = session.query(User).filter(User.email==user_schema.email).first()
-    if user:
-        raise HTTPException(status_code=400, detail="Email of the already registered user")
-    else:
-        password_encrypted = bcrypt_context.hash(user_schema.password)
-        new_user = User(user_schema.name, user_schema.email, password_encrypted, user_schema.active, user_schema.admin)
-        session.add(new_user)
-        session.commit()
-        return {'message': f"User creating success {user_schema.email}"}
+async def create_user(
+    user_schema: UserSchema,
+    session: Session = Depends(get_session),
+    user: User = Depends(verify_token)    
+):
+    if not user.admin:
+        raise HTTPException(status_code=401, detail="You are not authorized to add a new user")
+    existing_user = session.query(User).filter(User.email == user_schema.email).first()
+    
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    password_encrypted = bcrypt_context.hash(user_schema.password)
+    new_user = User(
+        user_schema.name,
+        user_schema.email,
+        password_encrypted,
+        user_schema.active,
+        user_schema.admin
+    )
+    session.add(new_user)
+    session.commit()
+
+    return {"message": f"User created successfully: {user_schema.email}"}
+
+    
     
 @auth_router.post("/login")
 async def login(login_schema: LoginSchema, session : Session = Depends(get_session)):
@@ -52,6 +69,20 @@ async def login(login_schema: LoginSchema, session : Session = Depends(get_sessi
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
+            "token_type" : "Bearer"
+        }
+    
+
+@auth_router.post("/login-form")
+async def login_form(dados_formulario: OAuth2PasswordRequestForm = Depends(), session : Session = Depends(get_session)):
+    user = user_authentication(dados_formulario.username, dados_formulario.password,session)
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found or credentials not found ")
+    else:
+        access_token = creating_token(user.id)
+        refresh_token = creating_token(user.id, duration_token=timedelta(days=7) )
+        return {
+            "access_token": access_token,
             "token_type" : "Bearer"
         }
     

@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, ForeignKey
-from sqlalchemy.orm import declarative_base, Mapped
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 from sqlalchemy_utils.types import ChoiceType
 
 #Cria a conexão com seu banco
@@ -14,12 +14,12 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
 
-    id = Column("id", Integer, primary_key=True, autoincrement=True)
-    name = Column("name", String)
-    email = Column("email", String, nullable=False)
-    password = Column("password", String)
-    active = Column("active", Boolean)
-    admin = Column("admin", Boolean, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String)
+    email: Mapped[str] = mapped_column(String, nullable=False)
+    password: Mapped[str] = mapped_column(String)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def __init__(self, name, email, password, active=True, admin=False):
         self.name = name
@@ -48,6 +48,12 @@ class Order(Base):
         self.user_id = user_id
         self.status = status
         self.price = price
+
+    def calculate_price(self):
+
+
+        self.price = 10
+    
 
 
 #ItensPedido

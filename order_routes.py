@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from dependencies import get_session, verify_token
-from schemas import OrderSchema
-from models import Order, User
+from schemas import OrderSchema, OrderItemSchema
+from models import Order, User, OrderItems
 
 order_router = APIRouter(prefix="/orders", tags=["orders"], dependencies=[Depends(verify_token)])
 
@@ -40,4 +40,25 @@ async def order_list(session: Session = Depends(get_session), user: User = Depen
         return {
             'order': order_list
         }
+
+@order_router.post('/order/insert_item/{order_id}') 
+async def insert_order_item(order_id: int ,order_item_schema: OrderItemSchema, session : Session = Depends(get_session), user: User = Depends(verify_token)):
+    order = session.query(Order).filter(Order.id==order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    elif not user.admin and user.id != order.user_id:
+        raise HTTPException(status_code=403, detail="You are not authorized")
+    order_item = OrderItems(order_item_schema.quantity, order_item_schema.flavor, order_item_schema.size, order_item_schema.unit_price, order_id)
+    order.calculate_price()
+    session.add(order_item)
+    session.commit()
+    return {
+        "message" : "Item creation successful",
+        "item_id" : order_item.id,
+        "price" : order.price
+    }
     
+
+
+
+

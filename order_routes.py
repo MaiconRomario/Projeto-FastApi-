@@ -1,3 +1,4 @@
+# type: ignore
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from dependencies import get_session, verify_token
@@ -56,6 +57,24 @@ async def insert_order_item(order_id: int ,order_item_schema: OrderItemSchema, s
         "message" : "Item creation successful",
         "item_id" : order_item.id,
         "price" : order.price
+    }
+    
+
+@order_router.post('/order/remove_item/{oder_item_id}') 
+async def remove_order_item(oder_item_id: int, session : Session = Depends(get_session), user: User = Depends(verify_token)):
+    order_item = session.query(OrderItems).filter(OrderItems.id==oder_item_id).first()
+    order = session.query(Order).filter(Order.id==order_item.order_id).first() 
+    if not order_item:
+        raise HTTPException(status_code=404, detail="Order item not found")
+    elif not user.admin and user.id != order.user_id: 
+        raise HTTPException(status_code=403, detail="You are not authorized")
+    session.delete(order_item)
+    order.calculate_price() 
+    session.commit()
+    return {
+        "message" : "Item removed successfully",
+        "quantity_order_item": len(order.items),
+        "order": order
     }
     
 

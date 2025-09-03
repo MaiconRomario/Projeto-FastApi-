@@ -2,8 +2,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from dependencies import get_session, verify_token
-from schemas import OrderSchema, OrderItemSchema
+from schemas import OrderSchema, OrderItemSchema, ResponseOrderSchema
 from models import Order, User, OrderItems
+from typing import List 
 
 order_router = APIRouter(prefix="/orders", tags=["orders"], dependencies=[Depends(verify_token)])
 
@@ -99,16 +100,14 @@ async def view_order(order_id: int, session: Session = Depends(get_session), use
         raise HTTPException(status_code=400, detail='order not found')
     if not user.admin and user.id != order.user_id:  # type: ignore
         raise HTTPException(status_code=401, detail="You are not authorized to modify")
-
     return {
         'quantity_item' : len(order.items),
         'order': order
     }
 
-@order_router.get('/list/order-user')
+
+@order_router.get('/list/order-user', response_model=List[ResponseOrderSchema])
 async def order_list(session: Session = Depends(get_session), user: User = Depends(verify_token)):
-        order_list = session.query(Order).filter(Order.user_id==user.id).all()
-        return {
-            'order': order_list
-        }
+        order = session.query(Order).filter(Order.user_id==user.id).all()
+        return order
 

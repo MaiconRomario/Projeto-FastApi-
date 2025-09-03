@@ -78,6 +78,37 @@ async def remove_order_item(oder_item_id: int, session : Session = Depends(get_s
     }
     
 
+@order_router.post("/order/finish/{order_id}")
+async def finish_order(order_id: int, session: Session = Depends(get_session), user: User = Depends(verify_token)):
+    order = session.query(Order).filter(Order.id==order_id).first()
+    if not order:
+        raise HTTPException(status_code=400, detail='order not found')
+    if not user.admin and user.id != order.user_id:  # type: ignore
+        raise HTTPException(status_code=401, detail="You are not authorized to modify")
+    order.status ="FINALIZADO"
+    session.commit()
+    return {
+        'message': f'Order {order.id} finish with success',
+        'order': order
+    }
 
+@order_router.get('/order/{order_id}')
+async def view_order(order_id: int, session: Session = Depends(get_session), user: User = Depends(verify_token)):
+    order = session.query(Order).filter(Order.id==order_id).first()
+    if not order:
+        raise HTTPException(status_code=400, detail='order not found')
+    if not user.admin and user.id != order.user_id:  # type: ignore
+        raise HTTPException(status_code=401, detail="You are not authorized to modify")
 
+    return {
+        'quantity_item' : len(order.items),
+        'order': order
+    }
+
+@order_router.get('/list/order-user')
+async def order_list(session: Session = Depends(get_session), user: User = Depends(verify_token)):
+        order_list = session.query(Order).filter(Order.user_id==user.id).all()
+        return {
+            'order': order_list
+        }
 
